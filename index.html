@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gold Strategy Calculator</title>
+  <style>
+    :root {
+      --bg: #0E0E0F;
+      --bg-light: #1A1A1B;
+      --card: #161617;
+      --border: #2A2A2B;
+      --text: #ECECEC;
+      --text-dim: #9A9A9A;
+      --accent: #3A82F7;
+      --accent-hover: #5A99FF;
+
+      /* Softer, harmonious accent colors */
+      --green: #5AC49A;
+      --orange: #E7AB5E;
+      --red-soft: #E47D7D;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont;
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .inputs {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    label {
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    input {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      transition: 0.15s;
+      margin-bottom: 16px;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 15px;
+      background: var(--card);
+      border-radius: 10px;
+      overflow: hidden;
+      table-layout: fixed;
+    }
+
+    th {
+      background: var(--bg-light);
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: right;
+      font-weight: 400;
+    }
+
+    td:first-child, th:first-child {
+      text-align: left;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    tfoot td {
+      border-top: 1px solid var(--border);
+    }
+
+    .total-row td {
+      background: var(--bg-light);
+      font-weight: 500;
+    }
+
+    /* Summary section */
+    .summary-heading {
+      margin-top: 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    /* Summary grid aligned with table:
+       col1 = Month, col2 = Profit No W, col3 = Profit With W,
+       col4 = Withdrawals, col5 = Deposits.
+       First card spans columns 1 & 2. */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 6px;
+      align-items: stretch;
+    }
+
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-span-two {
+      grid-column: 1 / span 2;
+    }
+
+    .summary-label {
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-value {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .summary-pct {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .summary-pct.green {
+      color: var(--green);
+    }
+    .summary-pct.orange {
+      color: var(--orange);
+    }
+
+    .summary-green .summary-value {
+      color: var(--green);
+    }
+    .summary-orange .summary-value {
+      color: var(--orange);
+    }
+    .summary-red .summary-value {
+      color: var(--red-soft);
+    }
+    .summary-blue .summary-value {
+      color: var(--accent);
+    }
+
+    .summary-breakdown {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    .summary-breakdown strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .warning-icon {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--orange);
+      pointer-events: none;
+    }
+
+    .warning-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px; /* bigger hover area */
+      cursor: default;
+    }
+
+    .warning-wrapper::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 130%;
+      right: 0;
+      background: #1f1f21;
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.05s ease-out;
+      border: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .warning-wrapper:hover::after {
+      opacity: 1;
+    }
+
+    .accent-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .muted-text {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .cell-sub {
+      display: block;
+      font-size: 13px;
+      margin-top: 2px;
+    }
+    .blue-sub {
+      color: var(--accent);
+    }
+    .red-sub {
+      color: var(--red-soft);
+    }
+
+    /* Colored columns */
+    .col-profit-no {
+      color: var(--green);
+    }
+    .col-profit-with {
+      color: var(--orange);
+    }
+    .col-withdrawal {
+      color: var(--red-soft);
+      text-align: center;
+    }
+    .col-deposit {
+      color: var(--accent);
+      text-align: center;
+    }
+    th.col-withdrawal,
+    th.col-deposit {
+      text-align: center;
+    }
+	
+	.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dev-tag {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+  </style>
+</head>
+<body>
+
+<div class="title-row">
+  <h1>Gold Strategy Calculator</h1>
+  <span class="dev-tag">Developed by DXB</span>
+</div>
+
+
+  <div class="inputs">
+    <div class="input-group">
+      <label>Starting capital (USD)</label>
+      <input id="startCapital" type="number" value="80000" />
+    </div>
+    <div class="input-group">
+      <label>Monthly profit (%)</label>
+      <input id="monthlyRate" type="number" value="7" step="0.1" />
+    </div>
+    <div class="input-group">
+      <label>Number of months</label>
+      <input id="months" type="number" value="12" />
+    </div>
+    <div class="input-group">
+      <label>Monthly withdrawal (USD)</label>
+      <input id="monthlyWithdrawal" type="number" value="0" />
+    </div>
+    <div class="input-group">
+      <label>Monthly deposit (USD)</label>
+      <input id="monthlyDeposit" type="number" value="0" />
+    </div>
+  </div>
+
+  <button onclick="generateTable()">Simulate</button>
+
+  <div class="summary-heading" id="summaryHeading">Total Profits over 12 Months</div>
+
+<div class="summary-grid">
+
+<!-- No withdrawals -->
+<div class="summary-card summary-green summary-span-two">
+  <div class="summary-label">
+    <span style="font-weight:600; color:var(--text);">Profits</span><br>
+    <span style="font-size:12px; color:var(--text-dim);">without any withdrawals</span>
+  </div>
+  <div class="summary-value" id="finalNoWithdrawal">–</div>
+  <div class="summary-breakdown" id="noBreakdown"></div>
+</div>
+
+<!-- With withdrawals -->
+<div class="summary-card summary-orange">
+  <div class="summary-label">
+    <span style="font-weight:600; color:var(--text);">Profits</span><br>
+    <span style="font-size:12px; color:var(--text-dim);">with withdrawals included</span>
+  </div>
+  <div class="summary-value" id="finalWithWithdrawals">–</div>
+  <div class="summary-breakdown" id="withBreakdown"></div>
+</div>
+
+
+  <!-- Lost compounding -->
+  <div class="summary-card summary-red">
+    <div class="summary-label">Lost by withdrawals</div>
+    <div class="summary-row">
+      <div class="summary-value" id="lostCompounding">–</div>
+      <div class="warning-wrapper" id="lostWrapper" data-tooltip="">
+        <span class="warning-icon" id="lostIcon">!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Earned by depositing -->
+  <div class="summary-card summary-blue">
+    <div class="summary-label">Earned by depositing</div>
+    <div class="summary-value" id="earnedDepositing">–</div>
+    <div class="summary-breakdown" id="depositBreakdown"></div>
+  </div>
+
+</div>
+
+
+  <div id="tableContainer"></div>
+
+  <script>
+    function formatNumber(n) {
+      return n.toLocaleString("en-US").replace(/,/g, " ");
+    }
+
+    function pctWithSign(v) {
+      if (v > 0) return "+" + v.toFixed(1) + "%";
+      return v.toFixed(1) + "%";
+    }
+
+    function generateTable() {
+      const startCapital = Number(document.getElementById("startCapital").value);
+      const monthlyRate = Number(document.getElementById("monthlyRate").value) / 100;
+      const months = Number(document.getElementById("months").value);
+      const monthlyWithdrawal = Number(document.getElementById("monthlyWithdrawal").value);
+      const monthlyDeposit = Number(document.getElementById("monthlyDeposit").value);
+
+      if (!startCapital || !months || isNaN(monthlyRate)) {
+        alert("Please enter valid values for capital, months and rate.");
+        return;
+      }
+
+      const hasWithdraw = monthlyWithdrawal > 0;
+      const hasDeposit = monthlyDeposit > 0;
+
+      // Heading
+      const heading = document.getElementById("summaryHeading");
+      heading.textContent = `Total Profits over ${months} Month${months === 1 ? "" : "s"}`;
+
+      // Scenario 0: no deposits, no withdrawals
+      let cap0 = startCapital;
+      for (let i = 1; i <= months; i++) {
+        const p0 = Math.floor(cap0 * monthlyRate);
+        cap0 += p0;
+      }
+      const final0 = cap0;
+      const profit0 = final0 - startCapital;
+
+      // Scenario 1: deposits (if any), no withdrawals
+      let cap1 = startCapital;
+      const caps1 = [];
+      const rowData = [];
+
+      for (let i = 1; i <= months; i++) {
+        const profit1Step = Math.floor(cap1 * monthlyRate);
+        cap1 += profit1Step;
+        if (hasDeposit) cap1 += monthlyDeposit;
+        caps1.push(cap1);
+        rowData.push({ month: i, profitNoW: profit1Step, profitWithW: null });
+      }
+      const final1 = cap1;
+      const profit1 = final1 - startCapital;
+
+      // Scenario 2: deposits + withdrawals
+      let cap2 = startCapital;
+      const caps2 = [];
+      if (hasWithdraw) {
+        for (let i = 1; i <= months; i++) {
+          const profit2Step = Math.floor(cap2 * monthlyRate);
+          cap2 += profit2Step;
+          if (hasDeposit) cap2 += monthlyDeposit;
+          cap2 -= monthlyWithdrawal;
+          if (cap2 < 0) cap2 = 0;
+          caps2.push(cap2);
+
+          // Net profit left in the strategy after withdrawal (deposit is not profit)
+          const netProfit = profit2Step - monthlyWithdrawal;
+          rowData[i - 1].profitWithW = netProfit;
+        }
+      }
+      const final2 = hasWithdraw ? cap2 : final1;
+      const profit2 = hasWithdraw ? final2 - startCapital : 0;
+
+      // Aggregate stats
+      const lost = hasWithdraw ? (profit1 - profit2) : 0;
+      const extraProfitFromDeposits = hasDeposit ? (profit1 - profit0) : 0;
+      const lostPct = hasWithdraw && profit1 > 0 ? (profit2 - profit1) / profit1 * 100 : 0;
+      const depositPct = hasDeposit && profit0 > 0 ? (profit1 - profit0) / profit0 * 100 : 0;
+
+      const roi1 = (profit1 / startCapital) * 100;
+      const roi2 = hasWithdraw ? (profit2 / startCapital) * 100 : 0;
+
+      const finalNoEl = document.getElementById("finalNoWithdrawal");
+      const finalWithEl = document.getElementById("finalWithWithdrawals");
+
+      // Cards: No withdrawals (profits + total ROI%)
+      finalNoEl.innerHTML =
+        `${formatNumber(profit1)} USD` +
+        `<span class="summary-pct green">${pctWithSign(roi1)}</span>`;
+
+      // Cards: With withdrawals
+      if (hasWithdraw) {
+        finalWithEl.innerHTML =
+          `${formatNumber(profit2)} USD` +
+          `<span class="summary-pct orange">${pctWithSign(roi2)}</span>`;
+      } else {
+        finalWithEl.textContent = "–";
+      }
+
+      // Year breakdowns
+      const noBreakdownEl = document.getElementById("noBreakdown");
+      const withBreakdownEl = document.getElementById("withBreakdown");
+
+      if (months > 12) {
+        const y1Index = Math.min(11, caps1.length - 1);
+        const cap1Y1 = caps1[y1Index];
+        const profit1Y1 = cap1Y1 - startCapital;
+        const profit1Y2 = profit1 - profit1Y1;
+
+        noBreakdownEl.innerHTML =
+          `<strong>Year 1:</strong> ${formatNumber(profit1Y1)} USD<br>` +
+          `<strong>Year 2:</strong> ${formatNumber(profit1Y2)} USD`;
+
+        if (hasWithdraw && caps2.length > 0) {
+          const y1Index2 = Math.min(11, caps2.length - 1);
+          const cap2Y1 = caps2[y1Index2];
+          const profit2Y1 = cap2Y1 - startCapital;
+          const profit2Y2 = profit2 - profit2Y1;
+
+          let pctText = "";
+          if (profit1 > 0) {
+            const pct = (profit2 - profit1) / profit1 * 100;
+            pctText =
+              `<br><span class="muted-text">${pctWithSign(pct)}</span> vs no withdrawals`;
+          }
+
+          withBreakdownEl.innerHTML =
+            `<strong>Year 1:</strong> ${formatNumber(profit2Y1)} USD<br>` +
+            `<strong>Year 2:</strong> ${formatNumber(profit2Y2)} USD` +
+            pctText;
+        } else {
+          withBreakdownEl.innerHTML = "";
+        }
+      } else {
+        noBreakdownEl.innerHTML = "";
+        if (hasWithdraw && profit1 > 0) {
+          withBreakdownEl.innerHTML =
+            `<span class="muted-text">${pctWithSign(lostPct)}</span> vs no withdrawals`;
+        } else {
+          withBreakdownEl.innerHTML = "";
+        }
+      }
+
+      // Lost compounding card + tooltip
+      const lostCompEl = document.getElementById("lostCompounding");
+      const lostWrapper = document.getElementById("lostWrapper");
+
+      if (hasWithdraw && lost > 0) {
+        lostCompEl.textContent = `${formatNumber(lost)} USD`;
+        lostWrapper.style.display = "inline-flex";
+        lostWrapper.setAttribute(
+          "data-tooltip",
+          `You are losing out on potential profits by withdrawing ${formatNumber(
+            monthlyWithdrawal
+          )} USD monthly. Consider lowering it.`
+        );
+      } else {
+        lostCompEl.textContent = "–";
+        lostWrapper.style.display = "none";
+        lostWrapper.setAttribute("data-tooltip", "");
+      }
+
+      // Earned depositing card
+      const earnedEl = document.getElementById("earnedDepositing");
+      const depositBreakdownEl = document.getElementById("depositBreakdown");
+
+      if (hasDeposit) {
+        earnedEl.textContent = `${formatNumber(extraProfitFromDeposits)} USD`;
+        if (depositPct !== 0) {
+          depositBreakdownEl.innerHTML =
+            `<span class="accent-text">${pctWithSign(depositPct)}</span> vs no deposits`;
+        } else {
+          depositBreakdownEl.innerHTML = "";
+        }
+      } else {
+        earnedEl.textContent = "–";
+        depositBreakdownEl.innerHTML = "";
+      }
+
+      // Build table
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th class="col-profit-no">Profit (No Withdrawal)</th>
+              <th class="col-profit-with">Profit (With Withdrawals)</th>
+              <th class="col-withdrawal">Withdrawals</th>
+              <th class="col-deposit">Deposits</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      rowData.forEach(r => {
+        html += `
+          <tr>
+            <td>${r.month}</td>
+            <td class="col-profit-no">${formatNumber(r.profitNoW)}</td>
+            <td class="col-profit-with">${
+              hasWithdraw && r.profitWithW !== null ? formatNumber(r.profitWithW) : ""
+            }</td>
+            <td class="col-withdrawal"></td>
+            <td class="col-deposit"></td>
+          </tr>
+        `;
+      });
+
+      // Bottom row – totals
+      let col2Sub = "";
+      if (hasDeposit && depositPct !== 0) {
+        col2Sub = `<span class="cell-sub blue-sub">${pctWithSign(
+          depositPct
+        )} extra profits due to deposits</span>`;
+      }
+
+      let col3Text = "-";
+      if (hasWithdraw) {
+        col3Text =
+          `${formatNumber(final2)} USD` +
+          `<span class="cell-sub red-sub">${pctWithSign(
+            lostPct
+          )} lost profits due to withdrawals</span>`;
+      }
+
+      html += `
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td>Total Compounded Capital after ${months} Month${months === 1 ? "" : "s"}</td>
+              <td>${formatNumber(final1)} USD${col2Sub}</td>
+              <td>${col3Text}</td>
+              <td class="col-withdrawal">${hasWithdraw ? formatNumber(monthlyWithdrawal) + " / month" : "-"}</td>
+              <td class="col-deposit">${hasDeposit ? formatNumber(monthlyDeposit) + " / month" : "-"}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+
+      document.getElementById("tableContainer").innerHTML = html;
+    }
+  </script>
+
+</body>
+</html>
